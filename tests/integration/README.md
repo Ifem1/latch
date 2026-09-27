@@ -1,17 +1,16 @@
-# Integration tests
+# Integration evidence
 
-The live integration suite is intentionally not faked in CI. It requires a funded/configured Studionet account and real consensus finality.
+The live integration suite is not faked in CI; it requires a funded/configured Studionet account and real consensus finality. The requested live lifecycle was exercised on stable Studionet 61999. This directory intentionally does not contain synthetic transaction hashes or a second deployment harness.
 
-The final connected agent must execute the lifecycle in `docs/STUDIONET_RUNBOOK.md` and then add an automated or scripted integration harness that records:
+The finalized transaction ledger, state read-backs and source hashes are in [DEPLOYMENT.md](../../DEPLOYMENT.md). The run covered:
 
-- deployed LATCH address;
-- deployed ExampleLatchedGrant address;
-- finalized create/stage/arm transactions;
-- finalized semantic commit transaction;
-- finalized consumer callback and acknowledgement;
-- finalized semantic failure transaction;
-- inconclusive + later retry;
-- expiry fail-closed path;
-- negative hash/sender tests against the live deployment.
+- deployed LATCH and ExampleLatchedGrant contracts with byte-matched fetched source;
+- exact definition/action binding, consumer-stage and finalized arm;
+- provisional credit held at zero until commit;
+- validator-backed SATISFIED and FAILED decisions with finalized callbacks and consumer acknowledgements;
+- INCONCLUSIVE followed by retry after a public fixture commit and cooldown;
+- UNAVAILABLE with one of two required sources missing;
+- deadline expiry with finalized revert and acknowledgement;
+- wrong hashes, unauthorized arm, early resolution, terminal replay and acknowledged-callback retry rejection.
 
-No mocked transaction hashes belong in this directory.
+Public fixture pages are explicitly disclosed synthetic test evidence. They do not assert a real customer/service event. Direct Mode has 30 passing scenarios; live child-message delivery was separately verified from finalized transactions.

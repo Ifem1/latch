@@ -269,7 +269,7 @@ contracts/
   example_consumer.py      minimal cooperating consumer
 
 tests/direct/
-  test_latch.py            26 Direct Mode scenarios
+  test_latch.py            30 Direct Mode scenarios
 
 tests/integration/
   README.md                required live lifecycle checks
@@ -319,17 +319,11 @@ That script aborts unless the RPC reports chain ID `61999`.
 
 ## Validation and live deployment status
 
-The local Direct Mode suite passes (26 scenarios), static preflight passes, and GenVM lint plus semantic validation pass for both contracts using `v0.2.16`. The stable CLI reports `0.39.1`.
+LATCH and ExampleLatchedGrant are deployed and finalized on stable Studionet 61999. Both deployed source files were fetched from the RPC and matched byte-for-byte with the repository sources. Live validator-backed commit, failure/revert, inconclusive then retry, unavailable-source, expiry, callback and acknowledgement paths were exercised. The public lifecycle fixtures are explicitly disclosed synthetic evidence.
 
-The required RPC guard now returns chain ID `61999` from `https://studio.genlayer.com/api`. It sends a transparent `LATCH-network-check/1.0` User-Agent because the endpoint returned Cloudflare 1010 to Python's default user agent. No live deployment has been attempted yet. Before every deployment and live-testing phase, rerun `python scripts/check_network.py` and proceed only if it prints chain ID `61999`. Then:
+Local verification: `scripts/preflight.py` and `scripts/source_manifest.py` pass; Direct Mode reports 30 passing scenarios; GenVM `v0.2.16` lint and semantic validation pass for both contracts. The stable CLI is `0.39.1`.
 
-- deploy `Latch` to Studionet 61999;
-- deploy `ExampleLatchedGrant` pointing at the deployed LATCH address;
-- run the live commit, revert, inconclusive/retry, expiry and acknowledgement lifecycles;
-- record finalized transaction hashes, contract addresses and source commit;
-- update `DEPLOYMENT.md` and `REVIEW_EVIDENCE.md` with real evidence only.
-
-No deployment address or successful live result is fabricated in this repository.
+See [DEPLOYMENT.md](DEPLOYMENT.md) for addresses, finalized transaction hashes, source hashes, lifecycle read-backs, network confirmation, fee observations and the source commit. Re-run `python scripts/check_network.py` before every live deployment or test phase; it refuses to proceed unless the canonical RPC reports chain ID `61999`.
 
 ## Submission category
 

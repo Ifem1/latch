@@ -60,6 +60,30 @@ def mock_outcome(vm, url_pattern, body, outcome, evidence="", source_index=0):
     )
 
 
+def seed_provisional_grant(consumer, beneficiary, *, amount=25, latch_id=1):
+    """Set up the consumer-side provisional record for isolated callback tests."""
+    grant_id = 1
+    grant = consumer.grants.get_or_insert_default(grant_id)
+    grant.latch_id = latch_id
+    grant.definition_hash = "cd" * 32
+    grant.action_hash = ACTION_HASH
+    grant.beneficiary = type(consumer.latch_contract)(beneficiary)
+    grant.amount = amount
+    grant.purpose = "Direct Mode provisional callback fixture"
+    grant.state = 1
+    grant.staged_at = 1
+    grant.finalized_at = 0
+    consumer.latch_to_grant[latch_id] = grant_id
+    return grant_id, grant
+
+
+def accept_finalized_test_message(vm, request):
+    """Direct Mode does not deliver cross-contract messages; acknowledge them at the boundary."""
+    if "PostMessage" in request:
+        return {"ok": None}
+    return None
+
+
 def test_create_latch_freezes_definition(direct_vm, direct_deploy, direct_alice):
     contract, latch_id = create_latch(direct_vm, direct_deploy, direct_alice)
     record = contract.get_latch(latch_id)
@@ -356,3 +380,101 @@ def test_retry_callback_requires_terminal_state(direct_vm, direct_deploy, direct
     contract, latch_id = create_latch(direct_vm, direct_deploy, direct_alice)
     with direct_vm.expect_revert("not terminal"):
         contract.retry_callback(latch_id)
+
+
+def test_acknowledgement_is_sender_hash_and_terminal_state_bound(
+    direct_vm, direct_deploy, direct_alice, direct_bob
+):
+    contract, latch_id = create_latch(direct_vm, direct_deploy, direct_alice)
+    record = arm(direct_vm, contract, latch_id, direct_alice)
+    direct_vm.warp(OBSERVE_ISO)
+    body = "Order LATCH-DEMO-001 is active and available for use."
+    mock_outcome(direct_vm, r".*example\.com/service-status.*", body, "SATISFIED", body)
+    contract.resolve_latch(latch_id)
+    direct_vm.run_validator()
+
+    direct_vm.sender = direct_bob
+    with direct_vm.expect_revert("only the bound consumer"):
+        contract.acknowledge_terminal(latch_id, record["definition_hash"], ACTION_HASH, "COMMITTED")
+
+    direct_vm.sender = direct_alice
+    with direct_vm.expect_revert("definition hash mismatch"):
+        contract.acknowledge_terminal(latch_id, "00" * 32, ACTION_HASH, "COMMITTED")
+    with direct_vm.expect_revert("action hash mismatch"):
+        contract.acknowledge_terminal(latch_id, record["definition_hash"], "11" * 32, "COMMITTED")
+    with direct_vm.expect_revert("does not match terminal latch state"):
+        contract.acknowledge_terminal(latch_id, record["definition_hash"], ACTION_HASH, "REVERTED")
+
+    contract.acknowledge_terminal(latch_id, record["definition_hash"], ACTION_HASH, "COMMITTED")
+    first_ack = contract.get_latch(latch_id)["consumer_ack_at"]
+    contract.acknowledge_terminal(latch_id, record["definition_hash"], ACTION_HASH, "COMMITTED")
+    final_record = contract.get_latch(latch_id)
+    assert final_record["consumer_ack_name"] == "COMMITTED"
+    assert final_record["consumer_ack_at"] == first_ack
+
+
+def test_callback_retries_obey_cooldown_and_attempt_bound(direct_vm, direct_deploy, direct_alice):
+    contract, latch_id = create_latch(direct_vm, direct_deploy, direct_alice)
+    arm(direct_vm, contract, latch_id, direct_alice)
+    direct_vm.warp(OBSERVE_ISO)
+    body = "Order LATCH-DEMO-001 is active and available for use."
+    mock_outcome(direct_vm, r".*example\.com/service-status.*", body, "SATISFIED", body)
+    contract.resolve_latch(latch_id)
+    direct_vm.run_validator()
+
+    with direct_vm.expect_revert("callback retry cooldown"):
+        contract.retry_callback(latch_id)
+
+    from datetime import datetime, timedelta
+
+    max_callbacks = contract.get_status_dictionary()["limits"]["max_callbacks"]
+    start = datetime.fromisoformat(OBSERVE_ISO)
+    for retry_index in range(1, max_callbacks):
+        direct_vm.warp((start + timedelta(seconds=61 * retry_index)).isoformat())
+        contract.retry_callback(latch_id)
+    assert contract.get_latch(latch_id)["callback_count"] == max_callbacks
+    direct_vm.warp((start + timedelta(seconds=61 * max_callbacks)).isoformat())
+    with direct_vm.expect_revert("callback retry limit"):
+        contract.retry_callback(latch_id)
+
+
+def test_consumer_provisional_credit_stays_unusable_and_commit_is_idempotent(
+    direct_vm, direct_deploy, direct_alice, direct_bob
+):
+    consumer = direct_deploy(CONSUMER_CONTRACT, direct_alice, sdk_version="v0.2.16")
+    grant_id, grant = seed_provisional_grant(consumer, direct_bob, amount=25)
+    direct_vm._gl_call_hook = accept_finalized_test_message
+    beneficiary = type(consumer.latch_contract)(direct_bob)
+    assert consumer.get_grant(grant_id)["state_name"] == "PROVISIONAL"
+    assert consumer.get_usable_credit(beneficiary) == 0
+
+    direct_vm.sender = direct_alice
+    with direct_vm.expect_revert("definition hash mismatch"):
+        consumer.latch_commit(1, "00" * 32, grant.action_hash)
+    with direct_vm.expect_revert("action hash mismatch"):
+        consumer.latch_commit(1, grant.definition_hash, "11" * 32)
+    assert consumer.get_grant(grant_id)["state_name"] == "PROVISIONAL"
+    assert consumer.get_usable_credit(beneficiary) == 0
+
+    consumer.latch_commit(1, grant.definition_hash, grant.action_hash)
+    assert consumer.get_grant(grant_id)["state_name"] == "COMMITTED"
+    assert consumer.get_usable_credit(beneficiary) == 25
+
+    consumer.latch_commit(1, grant.definition_hash, grant.action_hash)
+    assert consumer.get_usable_credit(beneficiary) == 25
+
+
+def test_consumer_revert_callback_is_idempotent_and_never_adds_credit(
+    direct_vm, direct_deploy, direct_alice, direct_bob
+):
+    consumer = direct_deploy(CONSUMER_CONTRACT, direct_alice, sdk_version="v0.2.16")
+    grant_id, grant = seed_provisional_grant(consumer, direct_bob, amount=25)
+    direct_vm._gl_call_hook = accept_finalized_test_message
+    direct_vm.sender = direct_alice
+
+    consumer.latch_revert(1, grant.definition_hash, grant.action_hash)
+    assert consumer.get_grant(grant_id)["state_name"] == "REVERTED"
+    assert consumer.get_usable_credit(type(consumer.latch_contract)(direct_bob)) == 0
+
+    consumer.latch_revert(1, grant.definition_hash, grant.action_hash)
+    assert consumer.get_usable_credit(type(consumer.latch_contract)(direct_bob)) == 0

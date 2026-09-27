@@ -26,6 +26,23 @@ genlayer network set studionet
 
 Do not switch this repository to the Studio development preview.
 
+The live run used the stable CLI's bundled GenLayerJS `1.1.8` client and `studionet` chain definition (ID `61999`) for typed writes and finalized receipt polling. The `evidence_urls_json` parameter is a **string containing JSON**, not a list. The CLI's generic `--args` parser interprets a JSON-looking argument as an actual array, so it can encode the wrong type. For SDK writes pass `JSON.stringify(urls)` as the string argument:
+
+```js
+const tx = await client.writeContract({
+  account,
+  address: latchAddress,
+  functionName: "create_latch",
+  args: [consumer, title, subject, condition, actionHash,
+         JSON.stringify(evidenceUrls), minSources, delaySeconds,
+         windowSeconds, retryCooldownSeconds],
+  value: 0n,
+});
+await client.waitForTransactionReceipt({ hash: tx, status: "FINALIZED" });
+```
+
+Pass addresses as the SDK's typed address/calldata values for the GenLayer API in use. Verify the actual record with `get_latch` after finality; do not infer creation from an accepted or rolled-back transaction.
+
 ## 3. Local checks
 
 ```bash
@@ -122,3 +139,7 @@ Create an armed latch that never obtains a determinate postcondition. After the 
 ## 13. Final source verification
 
 Fetch deployed contract code and compare it to the exact repository source. Update `DEPLOYMENT.md` and `REVIEW_EVIDENCE.md` with the resulting hashes and explorer links.
+
+## 14. Completed live run
+
+The current runbook has been exercised on Studionet 61999. Both deployments are finalized, the fetched source bytes match the repository, and commit, failure, inconclusive/retry, unavailable-source, expiry, negative arming/hash, callback and acknowledgement behavior were read back from chain. Synthetic public fixture content is disclosed as such. See [DEPLOYMENT.md](../DEPLOYMENT.md) for contract addresses, all finalized transaction hashes, outcomes and fee-interface limitations.

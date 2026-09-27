@@ -71,4 +71,6 @@ Final target is stable GenLayer Studionet, chain ID **61999**.
 
 ## Evidence status
 
-Source, tests, threat model and live-run procedure are included. Live deployment fields are intentionally blank until a connected agent performs and verifies real Studionet transactions.
+Source, threat model, Direct Mode suite, stable-network guard, and live-run evidence are included. LATCH and ExampleLatchedGrant are deployed and finalized on Studionet 61999; deployed code fetched from the RPC matches the repository byte-for-byte. Live commit, revert, inconclusive/retry, source-unavailability, expiry, finalized callback and acknowledgement evidence is recorded in [DEPLOYMENT.md](DEPLOYMENT.md).
+
+The public lifecycle fixtures are explicitly synthetic test evidence. They demonstrate the protocol and do not claim any real-world customer or service event. Transaction fees are not reported as settled because the stable RPC receipts do not expose a reliable settled fee/refund amount.
