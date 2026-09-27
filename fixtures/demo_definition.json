@@ -1,0 +1,14 @@
+{
+  "title": "Activate service credit after public activation",
+  "subject": "Activation of service order LATCH-DEMO-001",
+  "success_condition": "SATISFIED only if the frozen public evidence explicitly states that order LATCH-DEMO-001 is active. FAILED if it explicitly states that the order failed, was rejected, or was cancelled. Otherwise INCONCLUSIVE.",
+  "action_hash": "abababababababababababababababababababababababababababababababab",
+  "evidence_urls": [
+    "https://example.com/service-status"
+  ],
+  "min_sources": 1,
+  "observation_delay_seconds": 60,
+  "resolution_window_seconds": 600,
+  "retry_cooldown_seconds": 60,
+  "note": "Replace consumer address and evidence URL with real deployed/live values during Studionet proof."
+}

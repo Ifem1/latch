@@ -1,0 +1,11 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+.env
+artifacts/
+coverage.xml
+htmlcov/
+.DS_Store
+*.log

@@ -1,0 +1,5 @@
+# Stable Studionet reviewer/developer tooling.
+# Studionet is chain 61999. Keep this repository on the stable hosted network.
+genlayer-test @ git+https://github.com/genlayerlabs/genlayer-testing-suite@v0.29.2
+genvm-linter==0.11.0
+pytest>=8.0,<9

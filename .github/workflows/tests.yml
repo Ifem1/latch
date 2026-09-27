@@ -1,0 +1,19 @@
+name: tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  direct-mode:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install -r requirements-test.txt
+      - run: python scripts/preflight.py
+      - run: python -m pytest tests/direct -v
+      - run: GENVM_VERSION=v0.2.16 genvm-lint check contracts/latch.py
+      - run: GENVM_VERSION=v0.2.16 genvm-lint check contracts/example_consumer.py
