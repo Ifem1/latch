@@ -28,7 +28,7 @@ This document is intentionally split into **already verifiable from source** and
 |---|---|
 | Direct Mode full run | PASS — 26 passed |
 | GenVM lint on both contracts | PASS — lint and validation |
-| RPC chain guard | BLOCKED — configured RPC returned HTTP 403; chain ID not verified |
+| RPC chain guard | PASS — canonical RPC returned chain ID 61999 |
 | LATCH deployment to 61999 | PENDING |
 | Consumer deployment to 61999 | PENDING |
 | Live SATISFIED consensus | PENDING |

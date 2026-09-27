@@ -321,7 +321,7 @@ That script aborts unless the RPC reports chain ID `61999`.
 
 The local Direct Mode suite passes (26 scenarios), static preflight passes, and GenVM lint plus semantic validation pass for both contracts using `v0.2.16`. The stable CLI reports `0.39.1`.
 
-Live deployment is pending. The required RPC guard received HTTP 403 from `https://studio.genlayer.com/api`, so no chain ID was returned and no live transaction was attempted. A connected environment must first rerun `python scripts/check_network.py` and proceed only if it prints chain ID `61999`. Then it must:
+The required RPC guard now returns chain ID `61999` from `https://studio.genlayer.com/api`. It sends a transparent `LATCH-network-check/1.0` User-Agent because the endpoint returned Cloudflare 1010 to Python's default user agent. No live deployment has been attempted yet. Before every deployment and live-testing phase, rerun `python scripts/check_network.py` and proceed only if it prints chain ID `61999`. Then:
 
 - deploy `Latch` to Studionet 61999;
 - deploy `ExampleLatchedGrant` pointing at the deployed LATCH address;

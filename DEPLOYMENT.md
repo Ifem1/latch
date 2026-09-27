@@ -16,9 +16,9 @@ python scripts/check_network.py
 
 ## Deployment status
 
-**LIVE DEPLOYMENT BLOCKED: RPC returned HTTP 403 during the required chain guard.**
+**Studionet 61999 verified; live deployment not yet executed.**
 
-No deployment was attempted because the RPC did not return a chain ID. Do not proceed until `python scripts/check_network.py` independently reports exactly `61999`. Address and transaction fields below remain pending; no deployment evidence is fabricated.
+`python scripts/check_network.py` now independently reports chain ID `61999` from the canonical RPC. The guard identifies its requests as `LATCH-network-check/1.0`, which avoids the endpoint's Cloudflare 1010 response to Python's default user agent. Rerun this guard immediately before every deployment and live-testing phase. Address and transaction fields remain pending until finalized network results are read back.
 
 ### LATCH
 
@@ -65,4 +65,4 @@ Do not claim a live validator-backed lifecycle until the relevant transactions r
 - Stable CLI reports `0.39.1`; the repository targets the stable `studionet` alias only.
 - Contract source sizes: LATCH 42,423 bytes; ExampleLatchedGrant 11,104 bytes.
 
-The live deployment and lifecycle sections remain blocked by the RPC HTTP 403 response. Local validation is not a substitute for live consensus evidence.
+Local validation is not a substitute for live consensus evidence. No live deployment or lifecycle transaction has been sent yet.
