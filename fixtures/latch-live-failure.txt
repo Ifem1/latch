@@ -1,0 +1,6 @@
+LATCH public semantic test fixture
+Fixture ID: LATCH-LIVE-FAILURE-2026-09-27
+Status: REJECTED
+Postcondition: service order LATCH-LIVE-FAILURE-2026-09-27 was rejected and activation failed.
+Interpretation: the frozen activation postcondition is FAILED.
+This is a disclosed synthetic fixture for testing the LATCH protocol. It makes no claim about a real customer or external service.

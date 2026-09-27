@@ -1,0 +1,6 @@
+LATCH public semantic test fixture
+Fixture ID: LATCH-LIVE-COMMIT-2026-09-27
+Status: ACTIVE
+Postcondition: service order LATCH-LIVE-COMMIT-2026-09-27 is active and available for use.
+Interpretation: the frozen activation postcondition is SATISFIED.
+This is a disclosed synthetic fixture for testing the LATCH protocol. It makes no claim about a real customer or external service.
