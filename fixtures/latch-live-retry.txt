@@ -1,6 +1,6 @@
 LATCH public semantic test fixture
 Fixture ID: LATCH-LIVE-RETRY-2026-09-27
-Status: PENDING
-Postcondition: service order LATCH-LIVE-RETRY-2026-09-27 is being processed. The public evidence does not establish activation or failure.
-Interpretation: the frozen activation postcondition is INCONCLUSIVE until this file is changed in a later public Git commit.
+Status: ACTIVE
+Postcondition: service order LATCH-LIVE-RETRY-2026-09-27 is active and available for use.
+Interpretation: the same frozen activation postcondition is now SATISFIED in a later public Git commit. The earlier PENDING revision remains visible in repository history.
 This is a disclosed synthetic fixture for testing the LATCH protocol. It makes no claim about a real customer or external service.
