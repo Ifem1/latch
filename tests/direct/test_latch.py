@@ -629,4 +629,4 @@ def test_cancelled_latch_recovery_reverts_provisional_grant_idempotently(
     beneficiary = type(consumer.latch_contract)(direct_bob)
     assert consumer.get_usable_credit(beneficiary) == 0
     assert consumer.retry_or_recover_arm(1) == "REVERTED"
-    assert consumer.get_usable_credit(beneficiary) == 0\n
+    assert consumer.get_usable_credit(beneficiary) == 0
