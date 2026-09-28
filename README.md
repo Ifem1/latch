@@ -129,8 +129,8 @@ For each observation attempt, the leader and validators independently:
 The custom validator then independently re-runs the observation and requires:
 
 - the same decision-bearing outcome;
-- a valid source index;
-- the leader's evidence excerpt to be present in that validator's independently rendered source;
+- the leader's evidence excerpt to be verbatim in the validator's independently rendered source at the same source index;
+- the leader excerpt to materially overlap the validator's independently chosen supporting excerpt;
 - empty evidence for `INCONCLUSIVE` / `UNAVAILABLE`.
 
 The leader cannot settle the latch merely by returning valid JSON.
@@ -155,6 +155,8 @@ UNAVAILABLE
 and the latch remains `ARMED`.
 
 This prevents the leader from silently settling from an incomplete evidence surface when the definition required broader availability.
+
+The recorded `available_mask` is leader-observation metadata. Validators independently enforce the frozen minimum threshold and agree on the decision-bearing outcome; LATCH does not claim consensus on an identical per-source availability bitmap across independent fetches.
 
 ## Finalized callbacks
 
@@ -269,7 +271,7 @@ contracts/
   example_consumer.py      minimal cooperating consumer
 
 tests/direct/
-  test_latch.py            30 Direct Mode scenarios
+  test_latch.py            38 Direct Mode scenarios
 
 tests/integration/
   README.md                required live lifecycle checks
@@ -319,9 +321,9 @@ That script aborts unless the RPC reports chain ID `61999`.
 
 ## Validation and live deployment status
 
-LATCH and ExampleLatchedGrant are deployed and finalized on stable Studionet 61999. Both deployed source files were fetched from the RPC and matched byte-for-byte with the repository sources. Live validator-backed commit, failure/revert, inconclusive then retry, unavailable-source, expiry, callback and acknowledgement paths were exercised. The public lifecycle fixtures are explicitly disclosed synthetic evidence.
+LATCH and ExampleLatchedGrant are deployed and finalized on stable Studionet 61999. Both deployed source files were fetched from the RPC and the complete source text matches the repository byte-for-byte. Live validator-backed SATISFIED/commit and FAILED/revert lifecycles finalized through consumer acknowledgement. Other edge paths are covered by Direct Mode tests; see [DEPLOYMENT.md](DEPLOYMENT.md) for exactly which live cases were run. The public lifecycle fixtures are explicitly disclosed synthetic evidence.
 
-Local verification: `scripts/preflight.py` and `scripts/source_manifest.py` pass; Direct Mode reports 30 passing scenarios; GenVM `v0.2.16` lint and semantic validation pass for both contracts. The stable CLI is `0.39.1`.
+Local verification: `scripts/preflight.py` and `scripts/source_manifest.py` pass; Direct Mode reports 38 passing scenarios; GenVM `v0.2.16` lint and semantic validation pass for both contracts. The stable CLI is `0.39.1`.
 
 See [DEPLOYMENT.md](DEPLOYMENT.md) for addresses, finalized transaction hashes, source hashes, lifecycle read-backs, network confirmation, fee observations and the source commit. Re-run `python scripts/check_network.py` before every live deployment or test phase; it refuses to proceed unless the canonical RPC reports chain ID `61999`.
 

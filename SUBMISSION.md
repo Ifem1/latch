@@ -22,7 +22,7 @@ create definition → consumer arm → observe → commit/revert → finalized c
 
 GenLayer is used only where ordinary deterministic contracts cannot safely decide the result: whether public evidence establishes the exact postcondition frozen before the provisional action was armed.
 
-Leader and validators independently fetch the source set and classify the same condition. Validators require agreement on the decision-bearing outcome and independently verify the leader's evidence excerpt against their own rendered source.
+Leader and validators independently fetch the source set and classify the same condition. Validators require agreement on the decision-bearing outcome, then check that the leader's verbatim excerpt and source index are supported by their own fetch and materially align with their independently selected support excerpt. The stored availability mask is leader-observation metadata; exact per-source bitmap agreement is not claimed.
 
 ## What deterministic code does
 
@@ -71,6 +71,6 @@ Final target is stable GenLayer Studionet, chain ID **61999**.
 
 ## Evidence status
 
-Source, threat model, Direct Mode suite, stable-network guard, and live-run evidence are included. LATCH and ExampleLatchedGrant are deployed and finalized on Studionet 61999; deployed code fetched from the RPC matches the repository byte-for-byte. Live commit, revert, inconclusive/retry, source-unavailability, expiry, finalized callback and acknowledgement evidence is recorded in [DEPLOYMENT.md](DEPLOYMENT.md).
+Source, threat model, Direct Mode suite, stable-network guard, and live-run evidence are included. LATCH and ExampleLatchedGrant are deployed and finalized on Studionet 61999; deployed code fetched from the RPC matches the repository byte-for-byte. Live SATISFIED/commit and FAILED/revert lifecycles both finalized through consumer acknowledgement. Bounded retry, source availability, expiry and negative arming paths are covered in Direct Mode; the evidence ledger distinguishes these from live demonstrations.
 
 The public lifecycle fixtures are explicitly synthetic test evidence. They demonstrate the protocol and do not claim any real-world customer or service event. Transaction fees are not reported as settled because the stable RPC receipts do not expose a reliable settled fee/refund amount.

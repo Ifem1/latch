@@ -140,6 +140,6 @@ Create an armed latch that never obtains a determinate postcondition. After the 
 
 Fetch deployed contract code and compare it to the exact repository source. Update `DEPLOYMENT.md` and `REVIEW_EVIDENCE.md` with the resulting hashes and explorer links.
 
-## 14. Completed live run
+## 14. Recorded live run
 
-The current runbook has been exercised on Studionet 61999. Both deployments are finalized, the fetched source bytes match the repository, and commit, failure, inconclusive/retry, unavailable-source, expiry, negative arming/hash, callback and acknowledgement behavior were read back from chain. Synthetic public fixture content is disclosed as such. See [DEPLOYMENT.md](../DEPLOYMENT.md) for contract addresses, all finalized transaction hashes, outcomes and fee-interface limitations.
+The final contract pair is deployed on Studionet 61999. Both sources were fetched from the RPC and the complete source text matches the repository. Validator-backed SATISFIED/commit and FAILED/revert lifecycles finalized through consumer acknowledgement. The remaining retry, unavailable-source, expiry and negative-call edge paths are covered by Direct Mode but are not represented as live demonstrations here. Synthetic fixture content is disclosed as such. See [DEPLOYMENT.md](../DEPLOYMENT.md) for addresses, transaction hashes, outcomes and fee-interface limitations.

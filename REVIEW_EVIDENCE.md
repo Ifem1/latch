@@ -1,65 +1,41 @@
 # Reviewer evidence ledger
 
-This ledger records checks that can be reproduced from source, finalized Studionet transactions, and read-back contract state. Full transaction IDs, addresses, outcomes, source hashes, and fee limitations are in [DEPLOYMENT.md](DEPLOYMENT.md).
+LATCH is a standalone reusable Intelligent Contract primitive, with a separate minimal cooperating consumer. It has no frontend. The protocol freezes the initiator, consumer, subject, condition, evidence URLs, source threshold, timing, and exact provisional action hash. Validators independently re-fetch public evidence. Only a finalized terminal callback changes cooperating consumer state, and acknowledgement is tracked separately.
 
-## Submission shape
-
-- Category: **Intelligent Contracts**.
-- Standalone reusable LATCH primitive in `contracts/latch.py`; no frontend.
-- Separate minimal cooperating consumer in `contracts/example_consumer.py`.
-- Frozen definition/action binding, consumer-only arming, validator re-observation, grounded determinate evidence, availability threshold, bounded retry rules, fail-closed expiry, finalized child callbacks, idempotent handler and separately tracked acknowledgement.
-- The example controls only cooperating provisional contract state; it makes no claim to reverse arbitrary external effects.
-
-## Local verification
+## Reproducible local checks
 
 | Check | Result |
 |---|---|
-| Stable CLI / network configuration | CLI `0.39.1`; stable `studionet`; target chain 61999 |
-| `python scripts/preflight.py` | PASS |
-| `python scripts/source_manifest.py` | PASS |
-| `python -m pytest tests/direct -v` | PASS — 30 scenarios |
-| GenVM lint + semantic validation, LATCH | PASS — GenVM `v0.2.16`, linter `0.11.0`, 14 methods |
-| GenVM lint + semantic validation, consumer | PASS — GenVM `v0.2.16`, linter `0.11.0`, 6 methods |
-| RPC guard | Repeatedly returned `61999` from `https://studio.genlayer.com/api` before each live deployment/testing phase |
+| Stable CLI / configured chain | GenLayer CLI 0.39.1; Studionet 61999 |
+| Static preflight | `python scripts/preflight.py` PASS |
+| Source manifest | `python scripts/source_manifest.py` PASS |
+| Direct Mode suite | 38 passed |
+| GenVM lint + semantic validation, LATCH | PASS; GenVM v0.2.16, linter 0.11.0, 15 methods (8 views, 7 writes) |
+| GenVM lint + semantic validation, consumer | PASS; 7 methods (3 views, 4 writes) |
+| Live chain guard | RPC `https://studio.genlayer.com/api` reported exactly 61999 before deployment and live verification |
 
-## Live deployed source
+The suite covers immutable binding, consumer-only arming, observation timing, grounded evidence, independent validator checks, bounded retry and callback behavior, expiry, cancellation, unsafe inputs, callback authentication/idempotency, acknowledgement binding, and provisional-credit isolation.
 
-| Contract | Address | Deployment tx | SHA-256 | Exact fetched-source comparison |
-|---|---|---|---|---|
-| LATCH | `0x8BC6278e19CB5c40DDcBDb7c3Dc8fCbEDdd2096C` | `0x67da2b39085c1532db75069e0e9ede473272a1b08cc59eb876189216c7e4bb5c` | `07f08b6b4d79835abbb0b7275d674667c52a23a8dbb2090f68d5ac60f85dce9d` | `gen_getContractCode` bytes exactly match `contracts/latch.py` |
-| ExampleLatchedGrant | `0xf4eCC1CD4A811C37fA31669aFd8fA238a1fc8C93` | `0xd6f64aff7f5586d6448790f95c14a36b22a46484a2f1b29dfef68b240cfc5987` | `81609ff0b41c51f0da7eac4ebffa810f7a1b23d59c3f4f76e9a1d5ff65b8be27` | `gen_getContractCode` bytes exactly match `contracts/example_consumer.py` |
+## Final source deployments
 
-Deployment source commit: `c7fe053735a2d78b2a446d832709d7e6abf529bd`. No contract source changes followed deployment.
+| Contract | Address | Deployment transaction | Source SHA-256 |
+|---|---|---|---|
+| LATCH | `0xAE6E86F53fDCF676F2A0176F4E2752Bdf9725434` | `0xbd185cf38fce9e3e3b15ba9edad263e50963aa56f6a7a9dd797abe6682c3b341` | `fd38e67b638ee8d16130178efef920a91ed8ae79a359608afc7e56fcc8ad1b81` |
+| ExampleLatchedGrant | `0x77D1c0C41D124b3cA9E24F6E04E2a104043a87e7` | `0x5db9a295094a516add56c8e03f99446bdf876de3b7032d32635d41d328871b0a` | `299e44ec32d6bbb154d45c516f612073aee4548e2fe0f221e57e870b270c17c0` |
 
-## Live semantic results
+Both deployment receipts were FINALIZED with MAJORITY_AGREE (5/5). `genlayer code` fetched each deployed source; each returned source contains the full corresponding local source byte-for-byte. Details and full transaction paths are in [DEPLOYMENT.md](DEPLOYMENT.md).
 
-| Scenario | Finalized and read-back result |
-|---|---|
-| SATISFIED | Latch 1 `COMMITTED`; attempt outcome and verbatim source excerpt recorded; finalized consumer callback; grant `COMMITTED`; usable credit 0→100; acknowledgement `COMMITTED`. |
-| FAILED | Latch 2 `REVERT_REQUIRED`; outcome `FAILED`; finalized revert callback; grant `REVERTED`; usable credit unchanged at 100; acknowledgement `REVERTED`. |
-| Insufficient sources | Latch 3 attempt 3 `UNAVAILABLE`; availability mask `10`; one of two required sources available; latch remains `ARMED`; callback count 0; grant remains provisional. |
-| INCONCLUSIVE | Latch 4 attempt 4 `INCONCLUSIVE`, terminal false; latch remains `ARMED`, callback count 0. |
-| Retry | Same frozen URL was later updated in public commit `fcf20ee`; after cooldown, latch 4 attempt 5 `SATISFIED`, terminal true; finalized commit callback; acknowledgement `COMMITTED`. The earlier PENDING revision remains in history. |
-| Expiry | Latch 5 expired after its on-chain deadline; `REVERT_REQUIRED`; finalized consumer revert and acknowledgement; grant `REVERTED`; no credit was added. |
+## Live lifecycle results
 
-All public lifecycle fixtures are explicitly synthetic protocol test data, not claims about a real service or customer.
+- **SATISFIED:** latch 2 committed; finalized child commit callback; consumer grant committed; usable credit increased 0→5; finalized consumer acknowledgement recorded as COMMITTED.
+- **FAILED:** latch 3 became REVERT_REQUIRED; finalized revert callback; grant became REVERTED; usable credit remained 5; finalized acknowledgement recorded as REVERTED.
 
-## Live negative calls
+Both lifecycles ran against the final deployed contract pair on chain 61999. All parent and child transactions reached FINALIZED / MAJORITY_AGREE. Fixture content is synthetic, publicly readable protocol test data.
 
-- Wrong definition hash: rejected at consumer/LATCH exact-binding check.
-- Wrong action hash: rejected at consumer/LATCH exact-binding check.
-- Initiator attempted to arm: rejected; only the bound consumer may arm.
-- Early resolve: rejected because the observation window had not opened.
-- Terminal resolve replay: rejected because the latch was no longer armed.
-- Callback retry after acknowledgement: rejected because the consumer already acknowledged terminal state.
-- Wrong callback sender and duplicate callbacks: covered by Direct Mode cases; no malicious consumer contract was deployed solely to fabricate a failed callback.
+## Fee observations
 
-The test latch for early resolution was left armed after the negative call; the call did not alter state. This does not affect either deployed contract or any successful lifecycle.
-
-## Fee reporting
-
-Method-call value was 0 GEN and receipts showed `value_credited: false`. The stable RPC returned `eth_gasPrice=0x0` and a generic `eth_estimateGas=0x7a120`; neither is a reliable settled Studionet fee quote. Receipts expose `gaslimit` and leader VM `gas_used`, not settled fee/refund. No monetary fee is inferred; details are in [DEPLOYMENT.md](DEPLOYMENT.md).
+Calls sent zero GEN application value. The stable RPC's zero `eth_gasPrice` and generic `eth_estimateGas` are not reliable settled fee measurements. Receipts did not provide a settled fee/refund field, so no actual transaction fee is claimed.
 
 ## GitHub target
 
-The repository remote is `https://github.com/Ifem1/latch.git`, branch `main`. The retry-fixture evidence update was pushed as `fcf20ee`; final documentation/evidence is committed and pushed separately. No alternate GitHub remote is used.
+The only configured remote is `https://github.com/Ifem1/latch.git`; the intended branch is `main`.

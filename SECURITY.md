@@ -62,7 +62,7 @@ It does trust GenLayer consensus/finality and the cooperating consumer contract'
 
 **Threat:** leader gives the correct label with invented supporting evidence.
 
-**Mitigation:** for determinate outcomes, validator checks the leader's excerpt against its own independently rendered source at the stated index.
+**Mitigation:** for determinate outcomes, the leader excerpt must be verbatim in the validator's independently fetched source at the stated index. The validator then independently checks whether that exact excerpt materially supports its own decision-bearing outcome.
 
 ### Timeout-to-success
 

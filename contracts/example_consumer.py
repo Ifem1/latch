@@ -13,6 +13,7 @@ GRANT_COMMITTED = 2
 GRANT_REVERTED = 3
 ERR_EXPECTED = "EXPECTED"
 MAX_PURPOSE_LEN = 400
+MAX_ARM_ATTEMPTS = 8
 
 
 @allow_storage
@@ -27,6 +28,7 @@ class Grant:
     state: u8
     staged_at: u256
     finalized_at: u256
+    arm_attempts: u8
 
 
 @gl.contract_interface
@@ -39,6 +41,14 @@ class ILatch:
             expected_definition_hash: str,
             expected_action_hash: str,
         ) -> bool: ...
+
+        def get_arm_status(
+            self,
+            latch_id: u256,
+            expected_consumer: Address,
+            expected_definition_hash: str,
+            expected_action_hash: str,
+        ) -> str: ...
 
     class Write:
         def arm_latch(
@@ -219,6 +229,7 @@ class ExampleLatchedGrant(gl.Contract):
         grant.state = u8(GRANT_PROVISIONAL)
         grant.staged_at = u256(now)
         grant.finalized_at = u256(0)
+        grant.arm_attempts = u8(1)
         self.latch_to_grant[latch_id] = grant_id
 
         # The grant is staged locally first. Arming is a finalized child transaction.
@@ -233,6 +244,51 @@ class ExampleLatchedGrant(gl.Contract):
             amount=amount,
         ).emit()
         return grant_id
+
+    @gl.public.write
+    def retry_or_recover_arm(self, latch_id: u256) -> str:
+        """Retry a lost arm child, or safely clear a grant for a cancelled latch.
+
+        A terminal latch is never locally changed: its finalized callback remains
+        the only authority that can commit or revert the grant.
+        """
+        self._only_admin()
+        grant_id, grant = self._grant_for_latch(latch_id)
+        if int(grant.state) == GRANT_REVERTED:
+            return "REVERTED"
+        if int(grant.state) != GRANT_PROVISIONAL:
+            raise gl.vm.UserError(f"{ERR_EXPECTED}: grant is not provisional")
+
+        latch = ILatch(self.latch_contract)
+        status = latch.view().get_arm_status(
+            latch_id,
+            gl.message.contract_address,
+            str(grant.definition_hash),
+            str(grant.action_hash),
+        )
+        if status == "CREATED":
+            if int(grant.arm_attempts) >= MAX_ARM_ATTEMPTS:
+                raise gl.vm.UserError(f"{ERR_EXPECTED}: arm retry limit reached")
+            grant.arm_attempts = u8(int(grant.arm_attempts) + 1)
+            latch.emit(on="finalized").arm_latch(
+                latch_id, str(grant.definition_hash), str(grant.action_hash)
+            )
+            return "ARM_REQUESTED"
+        if status == "ARMED":
+            return "ARMED"
+        if status == "CANCELLED":
+            # Cancellation is final and cannot authorize value. Clear only the
+            # unusable provisional record; never send a terminal acknowledgement.
+            grant.state = u8(GRANT_REVERTED)
+            grant.finalized_at = u256(message_timestamp())
+            GrantReverted(
+                grant_id, latch_id, beneficiary=str(grant.beneficiary),
+                amount=grant.amount, recovery="CANCELLED_LATCH",
+            ).emit()
+            return "REVERTED"
+        if status == "MISMATCH":
+            raise gl.vm.UserError(f"{ERR_EXPECTED}: latch binding mismatch")
+        raise gl.vm.UserError(f"{ERR_EXPECTED}: terminal latch requires its finalized callback")
 
     @gl.public.write
     def latch_commit(
@@ -316,9 +372,11 @@ class ExampleLatchedGrant(gl.Contract):
             "state_name": grant_state_name(int(grant.state)),
             "staged_at": int(grant.staged_at),
             "finalized_at": int(grant.finalized_at),
+            "arm_attempts": int(grant.arm_attempts),
         }
 
     @gl.public.view
     def get_usable_credit(self, beneficiary: Address) -> u256:
+        beneficiary = normalize_address(beneficiary)
         value = self.usable_credits.get(beneficiary)
         return u256(int(value) if value is not None else 0)
